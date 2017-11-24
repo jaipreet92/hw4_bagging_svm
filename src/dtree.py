@@ -34,7 +34,7 @@ class DTree(Learner):
         return predicted_vals
 
 
-def calculate_bias(training_data, testing_data, max_depth=None):
+def calculate_bias(training_data, max_depth=None):
     num_bootstrap_samples = 30
 
     bootstrap_samples = []
@@ -53,7 +53,6 @@ def calculate_bias(training_data, testing_data, max_depth=None):
         predictions[idx] = tree.test(training_data)
 
     assert np.any(predictions[:, :] == -1) == False
-    print(predictions.shape)
 
     ybar_vals = stats.mode(predictions, axis=0).mode[0]
     t_vals = training_data[:, -1]
