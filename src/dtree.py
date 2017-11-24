@@ -1,5 +1,7 @@
 from sklearn.tree import DecisionTreeClassifier
 import numpy as np
+import scipy.stats as stats
+
 
 class Learner(object):
     def train(self, training_data):
@@ -17,7 +19,7 @@ class DTree(Learner):
         self._sample = sample
 
     def train(self, training_data):
-        training_data_sample  = training_data
+        training_data_sample = training_data
         if self._sample:
             idxs = np.random.choice(training_data.shape[0], training_data.shape[0], replace=True)
             training_data_sample = training_data[idxs, :]
@@ -28,4 +30,44 @@ class DTree(Learner):
     def test(self, testing_data):
         predicted_vals = self._tree.predict(testing_data[:, 0:7])
         actual_vals = testing_data[:, 8]
-        print('Errors: {}'.format(predicted_vals - actual_vals))
+        self.last_error_rate = np.sum(np.absolute(predicted_vals - actual_vals)) / testing_data.shape[0]
+        #print('Errors for single learner with is {} sampled: {}'.format(self._sample, error_rate))
+        return predicted_vals
+
+
+def calculate_bias(training_data, testing_data, max_depth=None):
+    num_bootstrap_samples = 30
+
+    bootstrap_samples = []
+    for i in range(num_bootstrap_samples):
+        idxs = np.random.choice(training_data.shape[0], training_data.shape[0], replace=True)
+        bootstrap_samples.append(training_data[idxs, :])
+
+    trees = []
+    for bootstrap_sample in bootstrap_samples:
+        tree = DTree(sample=False, max_depth=max_depth)
+        tree.train(bootstrap_sample)
+        trees.append(tree)
+
+    predictions = np.full((num_bootstrap_samples, testing_data.shape[0]), fill_value=-1)
+    for idx, tree in enumerate(trees):
+        predictions[idx] = tree.test(testing_data)
+
+    assert np.any(predictions[:, :] == -1) == False
+    print(predictions.shape)
+
+    ybar_vals = stats.mode(predictions, axis=0).mode[0]
+    t_vals = testing_data[:, -1]
+
+    # Nowe we have bias main_predictions for all 250 test examples, across all bootstrap samples.
+
+    # Bias for all test/train examples
+    bias_vals = np.absolute(t_vals - ybar_vals)
+
+    # Variance for all test/train examples
+    variance_vals = np.zeros(predictions.shape[1])
+    row, column = predictions.shape
+    for idx in range(column):
+        variance_vals[idx] = np.count_nonzero(predictions[:, idx] != ybar_vals[idx]) / predictions.shape[0]
+
+    print('Depth: {} Total Bias: {} Variance: {}'.format(max_depth, np.sum(bias_vals), np.sum(variance_vals)))
