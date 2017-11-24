@@ -29,9 +29,8 @@ class DTree(Learner):
 
     def test(self, testing_data):
         predicted_vals = self._tree.predict(testing_data[:, 0:7])
-        actual_vals = testing_data[:, 8]
+        actual_vals = testing_data[:, -1]
         self.last_error_rate = np.sum(np.absolute(predicted_vals - actual_vals)) / testing_data.shape[0]
-        #print('Errors for single learner with is {} sampled: {}'.format(self._sample, error_rate))
         return predicted_vals
 
 
@@ -49,17 +48,15 @@ def calculate_bias(training_data, testing_data, max_depth=None):
         tree.train(bootstrap_sample)
         trees.append(tree)
 
-    predictions = np.full((num_bootstrap_samples, testing_data.shape[0]), fill_value=-1)
+    predictions = np.full((num_bootstrap_samples, training_data.shape[0]), fill_value=-1)
     for idx, tree in enumerate(trees):
-        predictions[idx] = tree.test(testing_data)
+        predictions[idx] = tree.test(training_data)
 
     assert np.any(predictions[:, :] == -1) == False
     print(predictions.shape)
 
     ybar_vals = stats.mode(predictions, axis=0).mode[0]
-    t_vals = testing_data[:, -1]
-
-    # Nowe we have bias main_predictions for all 250 test examples, across all bootstrap samples.
+    t_vals = training_data[:, -1]
 
     # Bias for all test/train examples
     bias_vals = np.absolute(t_vals - ybar_vals)
@@ -71,3 +68,4 @@ def calculate_bias(training_data, testing_data, max_depth=None):
         variance_vals[idx] = np.count_nonzero(predictions[:, idx] != ybar_vals[idx]) / predictions.shape[0]
 
     print('Depth: {} Total Bias: {} Variance: {}'.format(max_depth, np.sum(bias_vals), np.sum(variance_vals)))
+    return bias_vals, variance_vals
