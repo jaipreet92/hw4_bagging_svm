@@ -66,5 +66,5 @@ def calculate_bias(training_data, max_depth=None):
     for idx in range(column):
         variance_vals[idx] = np.count_nonzero(predictions[:, idx] != ybar_vals[idx]) / predictions.shape[0]
 
-    print('Depth: {} Total Bias: {} Variance: {}'.format(max_depth, np.sum(bias_vals), np.sum(variance_vals)))
+    print('Depth: {} Total Bias: {} Variance: {}'.format(max_depth, np.mean(bias_vals), np.mean(variance_vals)))
     return bias_vals, variance_vals

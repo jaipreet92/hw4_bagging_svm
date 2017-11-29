@@ -16,6 +16,7 @@ def load_svm_data():
 
 
 def scale_data(x_train, x_test):
+
     for x in x_train:
         for k, v in x.items():
             scaled_val = v / train_scaling_factors[k]
@@ -27,15 +28,15 @@ def scale_data(x_train, x_test):
             x[k] = scaled_val
 
 
-def compute_bias(x_train, y_train, num_bootstrap_samples=30, kernel=2):
+def compute_bias(x_train, y_train, num_bootstrap_samples, kernel):
     predictions = np.full((num_bootstrap_samples, len(y_train)), fill_value=-1)
 
     # Generate bootstrap sample, train, and store predictions
     for i in range(num_bootstrap_samples):
         print('Training Bootstrap sample {}'.format(i))
         x_train_sample, y_train_sample = generate_bootstrap_sample(x_train, y_train)
-        m = svm_train(y_train_sample, x_train_sample, '-t {}'.format(kernel))
-        y_predicted, p_acc, p_val = svm_predict(y_train_sample, x_train_sample, m)
+        m = svm_train(y_train_sample, x_train_sample, '-t {} -q'.format(kernel))
+        y_predicted, p_acc, p_val = svm_predict(y_train_sample, x_train_sample, m, '-q')
         predictions[i] = y_predicted
 
     # Get most common(main) prediction across the bootstrap samples for each training example
@@ -65,8 +66,8 @@ def generate_bootstrap_sample(x_train, y_train):
 
 def log_results(bias_vals, variance_vals, accuracy, kernel):
     print('Kernel: {} , Accuracy: {} , Total Bias: {}, Total Variance: {}'.format(kernel, accuracy,
-                                                                                  np.sum(bias_vals),
-                                                                                  np.sum(variance_vals)))
+                                                                                  np.mean(bias_vals),
+                                                                                  np.mean(variance_vals)))
 
 
 if __name__ == '__main__':
@@ -78,7 +79,7 @@ if __name__ == '__main__':
 
     # Train and Test, for kernels 0,1,2,3, get overall accuracy, bias, and variance
     for kernel in range(4):
-        m = svm_train(y_train, x_train, '-t {}'.format(kernel))
-        p_label, p_acc, p_val = svm_predict(y_test, x_test, m)
+        m = svm_train(y_train, x_train, '-q -t {}'.format(kernel))
+        p_label, p_acc, p_val = svm_predict(y_test, x_test, m, '-q')
         biases, variances = compute_bias(x_train, y_train, num_bootstrap_samples=30, kernel=kernel)
         log_results(biases, variances, p_acc[0], kernel=kernel)
